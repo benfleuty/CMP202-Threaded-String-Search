@@ -1,6 +1,8 @@
 #include "BoyerMoore.h"
 
+#include <functional>
 #include <iostream>
+#include <thread>
 #include <vector>
 
 void BoyerMoore::start_non_threaded_search()
@@ -67,6 +69,8 @@ std::vector<long long> BoyerMoore::non_threaded_search() {
 
 void BoyerMoore::search_substring(unsigned long long start_pos, unsigned long long end_pos)
 {
+	std::cout << "this thread ran";
+	return;
 	// iterate through all the text in the subset
 	for (unsigned long long i = start_pos; i < end_pos; ++i) {
 		// check if the last character in the pattern is a match
@@ -116,8 +120,26 @@ void BoyerMoore::start_boyer_moore_search_threads(const unsigned int& search_thr
 		// end_pos remains one tick ahead of start pos, leaving a width of search_thread_width_ between the start and end
 		end_pos = search_thread_count * i;
 
-		std::thread temp_thread(&BoyerMoore::search_substring, this, start_pos, end_pos);
-		threads_.emplace_back(temp_thread);
+		/* As the lecture teaches */
+		// error: no instance of constructor "std::thread::thread" matches the argument lis
+		//std::thread temp_thread(search_substring, start_pos, end_pos);
+
+		// SO attempt 1 https://stackoverflow.com/questions/49512288/no-instance-of-constructor-stdthreadthread-matches-argument-list
+		//std::thread temp_thread([this, start_pos, end_pos] {search_substring(start_pos, end_pos); });
+		//threads_.emplace_back(temp_thread);
+
+		// SO attempt 1.1 -	tried pointers, it brokey
+		//std::thread temp_thread([this, start_pos, end_pos] { this->search_substring(start_pos, end_pos); });
+		//std::thread* t = &temp_thread;
+		//threads_.emplace_back(t);
+
+		// SO attempt 2 - https://stackoverflow.com/questions/28574004/how-do-i-use-threading-in-a-class
+		//std::thread temp_thread(& BoyerMoore::search_substring, this, start_pos, end_pos);
+
+		// SO attempt 3 - https://stackoverflow.com/questions/52004854/start-stdthread-in-member-function-of-object-that-does-not-have-a-copy-constru
+		//std::thread temp_thread(&BoyerMoore::search_substring, &start_pos, &end_pos);
+
+		//threads_.emplace_back(temp_thread);
 	}
 
 	// join threads
