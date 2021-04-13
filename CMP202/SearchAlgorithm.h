@@ -8,7 +8,6 @@
 class SearchAlgorithm : public ISearchAlgorithm
 {
 protected:
-	std::vector<std::thread> threads_;
 	unsigned int total_threads_size_;
 	unsigned int search_threads_size_;
 	unsigned long long search_thread_width_;
