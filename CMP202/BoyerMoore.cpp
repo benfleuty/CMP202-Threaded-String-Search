@@ -11,7 +11,6 @@ void BoyerMoore::start_non_threaded_search()
 	timer.start();
 	matching_indexes = non_threaded_search();
 	timer.stop();
-	std::string report = generate_report();
 }
 
 // from cmp201
@@ -67,11 +66,19 @@ std::vector<long long> BoyerMoore::non_threaded_search() {
 	return matching_indexes;
 }
 
+void BoyerMoore::store_match_pos(unsigned long long match_pos)
+{
+	std::unique_lock<std::mutex> lock(matching_indexes_mutex);
+
+	////std::cout << "storing pos " << match_pos << std::endl;
+	matching_indexes.emplace_back(match_pos);
+	//progress_ready_ = true;
+	//progress_cv.notify_one();
+}
+
 void BoyerMoore::search_substring(unsigned long long start_pos, unsigned long long end_pos)
 {
-	std::cout << "this thread ran";
-	return;
-	// iterate through all the text in the subset
+	std::vector<std::thread> write_threads;
 	for (unsigned long long i = start_pos; i < end_pos; ++i) {
 		// check if the last character in the pattern is a match
 		const unsigned long long pos = i + pattern.size() - 1;		// no need to lock this as it is a read
@@ -98,10 +105,7 @@ void BoyerMoore::search_substring(unsigned long long start_pos, unsigned long lo
 			// add the index of the word to matchingIndexes
 			// CRITICAL POINT
 			// must lock as writing to vector
-			std::unique_lock<std::mutex> lock(matching_indexes_mutex);
-			matching_indexes.push_back(i);
-			progress_ready_ = true;
-			progress_cv.notify_one();
+			store_match_pos(i);
 		}
 	}
 }
@@ -111,39 +115,29 @@ void BoyerMoore::start_boyer_moore_search_threads(const unsigned int& search_thr
 	unsigned long long width = search_thread_width_;
 	unsigned long long start_pos = 0;
 	unsigned long long end_pos = 0;
-	// start search threads X1 to Xn-1
+	// start search threads X1 to Xn-2
+	std::vector<std::thread> threads;
+	timer.start();
 	for (unsigned int i = 1; i < search_thread_count; ++i)
 	{
-		// start_pos is the value of the search width multiplied by the number
-		// of threads that have already been started (i-1)
+		// start_pos is the value of the search width multiplied by the number of threads that have already been started (i-1)
 		start_pos = search_thread_width_ * (i - 1);
 		// end_pos remains one tick ahead of start pos, leaving a width of search_thread_width_ between the start and end
-		end_pos = search_thread_count * i;
+		end_pos = search_thread_width_ * i;
 
-		/* As the lecture teaches */
-		// error: no instance of constructor "std::thread::thread" matches the argument lis
-		//std::thread temp_thread(search_substring, start_pos, end_pos);
-
-		// SO attempt 1 https://stackoverflow.com/questions/49512288/no-instance-of-constructor-stdthreadthread-matches-argument-list
-		//std::thread temp_thread([this, start_pos, end_pos] {search_substring(start_pos, end_pos); });
-		//threads_.emplace_back(temp_thread);
-
-		// SO attempt 1.1 -	tried pointers, it brokey
-		//std::thread temp_thread([this, start_pos, end_pos] { this->search_substring(start_pos, end_pos); });
-		//std::thread* t = &temp_thread;
-		//threads_.emplace_back(t);
-
-		// SO attempt 2 - https://stackoverflow.com/questions/28574004/how-do-i-use-threading-in-a-class
-		//std::thread temp_thread(& BoyerMoore::search_substring, this, start_pos, end_pos);
-
-		// SO attempt 3 - https://stackoverflow.com/questions/52004854/start-stdthread-in-member-function-of-object-that-does-not-have-a-copy-constru
-		//std::thread temp_thread(&BoyerMoore::search_substring, &start_pos, &end_pos);
-
-		//threads_.emplace_back(temp_thread);
+		threads.emplace_back(std::thread(&BoyerMoore::search_substring, this, start_pos, end_pos));
 	}
 
-	// join threads
-	for (unsigned int i = 0; i < search_thread_count - 1; ++i) threads_[i].join();
+	// start search thread X-1
+	start_pos = end_pos;
+	end_pos = text.size();
+	threads.emplace_back(std::thread(&BoyerMoore::search_substring, this, start_pos, end_pos));
+
+	// join all threads
+	timer.stop();
+	std::cout << timer.elapsed_time_us() << std::endl;
+	for (auto& thread : threads) thread.join();
+	timer.stop();
 }
 
 void BoyerMoore::start_threaded_search()
@@ -165,6 +159,7 @@ void BoyerMoore::start_threaded_search()
 		}
 		catch (...) {}
 	}
+
 	const unsigned int num_of_search_threads = num_of_threads - 1;
 
 	// if there are more threads than chars to search
@@ -178,12 +173,12 @@ void BoyerMoore::start_threaded_search()
 	// take the total length of the text and divide it by the number of available cores
 	// the last search thread will take up the rest of the characters
 	// e.g. 1999 chars spread over 15 threads = 133 positions on threads 1-14 and 138 on thread 15
-	const unsigned long long thread_search_width = text.size() / num_of_search_threads;
+	search_thread_width_ = text.size() / num_of_search_threads;
 
 	std::cout << "\nTotal threads: " << num_of_threads
 		<< "\nSearch threads: " << num_of_search_threads
 		<< "\nText size:" << text.size()
-		<< "\nSearch thread width: " << thread_search_width;
+		<< "\nSearch thread width: " << search_thread_width_ << std::endl;
 
 	start_boyer_moore_search_threads(num_of_search_threads);
 }
@@ -191,8 +186,8 @@ void BoyerMoore::start_threaded_search()
 BoyerMoore::BoyerMoore()
 {
 	type = algorithm_type::boyer_moore;
-	for (int i = 0; i < 256; ++i)
-		skip_table[i] = pattern.size();
+	for (long long& i : skip_table)
+		i = pattern.size();
 
 	// for each of the characters in the pattern
 	for (unsigned long long i = 0; i < pattern.size(); ++i)

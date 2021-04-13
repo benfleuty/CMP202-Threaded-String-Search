@@ -37,13 +37,18 @@ std::string SearchAlgorithm::generate_report()
 
 	std::string html = R"(<!DOCTYPE html><html lang="en"><head><title><page_title></title><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/><style>body{width:60%;margin:0 auto; font-size:1.2em;}.match{background-color: cyan;}</style></head><body><date_time_of_search><br/><elapsed_time><br/><searched_text></body></html>)";
 	// add title
-	std::string new_title = "unspecified";
-	if (type == algorithm_type::boyer_moore)
-		new_title = "Boyer Moore";
-	else if (type == algorithm_type::rabin_karp)
-		new_title = "Rabin Karp";
+	std::string new_title;
 
-	new_title += " String Search";
+	if (type == algorithm_type::boyer_moore)
+		new_title += "Boyer Moore ";
+	else if (type == algorithm_type::rabin_karp)
+		new_title += "Rabin Karp ";
+
+	new_title += "String Search ";
+
+	if (!threaded)
+		new_title += "Non-";
+	new_title += "Threaded";
 
 	std::string elapsed_time = std::to_string(timer.elapsed_time_ms());
 	elapsed_time += "ms (";
