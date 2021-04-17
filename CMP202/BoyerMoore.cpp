@@ -36,7 +36,7 @@ std::vector<long long> BoyerMoore::non_threaded_search() {
 		skip[pattern[i]] = (pattern_length - 1) - i;
 
 	// iterate through all the text, stopping patternLength positions from the end of the text
-	for (long long i = 0; i < text_length - pattern_length; ++i) {
+	for (long long i = 0; i <= text_length - pattern_length; ++i) {
 		// check if the last character in the pattern is a match
 		const long long pos = i + pattern_length - 1;
 		const long long distance = skip[text[pos]];
@@ -64,16 +64,6 @@ std::vector<long long> BoyerMoore::non_threaded_search() {
 	}
 	//search_timer::stop();
 	return matching_indexes;
-}
-
-void BoyerMoore::store_match_pos(unsigned long long match_pos)
-{
-	std::unique_lock<std::mutex> lock(matching_indexes_mutex);
-
-	////std::cout << "storing pos " << match_pos << std::endl;
-	matching_indexes.emplace_back(match_pos);
-	//progress_ready_ = true;
-	//progress_cv.notify_one();
 }
 
 void BoyerMoore::search_substring(unsigned long long start_pos, unsigned long long end_pos)
@@ -117,7 +107,7 @@ void BoyerMoore::start_boyer_moore_search_threads(const unsigned int& search_thr
 	unsigned long long end_pos = 0;
 	// start search threads X1 to Xn-2
 	std::vector<std::thread> threads;
-	timer.start();
+	//timer.start();
 	for (unsigned int i = 1; i < search_thread_count; ++i)
 	{
 		// start_pos is the value of the search width multiplied by the number of threads that have already been started (i-1)
@@ -134,15 +124,15 @@ void BoyerMoore::start_boyer_moore_search_threads(const unsigned int& search_thr
 	threads.emplace_back(std::thread(&BoyerMoore::search_substring, this, start_pos, end_pos));
 
 	// join all threads
-	timer.stop();
-	std::cout << timer.elapsed_time_us() << std::endl;
 	for (auto& thread : threads) thread.join();
-	timer.stop();
+	//timer.stop();
 }
 
 void BoyerMoore::start_threaded_search()
 {
 	std::cout << "Boyer Moore threaded search starting" << std::endl;
+
+	timer.start();
 
 	// Get the number of available threads on this CPU
 	unsigned int num_of_threads = std::thread::hardware_concurrency();
@@ -160,7 +150,7 @@ void BoyerMoore::start_threaded_search()
 		catch (...) {}
 	}
 
-	const unsigned int num_of_search_threads = num_of_threads - 1;
+	const unsigned int num_of_search_threads = num_of_threads + 1;
 
 	// if there are more threads than chars to search
 	// don't bother with threading
@@ -181,6 +171,7 @@ void BoyerMoore::start_threaded_search()
 		<< "\nSearch thread width: " << search_thread_width_ << std::endl;
 
 	start_boyer_moore_search_threads(num_of_search_threads);
+	timer.stop();
 }
 
 BoyerMoore::BoyerMoore()
