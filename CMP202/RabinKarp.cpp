@@ -22,39 +22,38 @@ void RabinKarp::hash_substring(const std::string& substring, long long& substrin
 	//return substring_hash_val;
 }
 
-void RabinKarp::roll_hash(const std::string& substring, long long& text_hash_val, const unsigned long long& hash_val, const unsigned long long& i) const
-{
-	/* Get hash value of the next position
-	 * Subtract hash value of substring[i]
-	 * Add value of substring[i + pat_len]
-	 * Divide total by prime number
-	 */
-	const auto pos = i + pattern.size();
-	text_hash_val = (alphabet_ * (text_hash_val - substring[i] * hash_val) + substring[pos]) % prime_;
+//void RabinKarp::roll_hash(const std::string& substring, long long& text_hash_val, const unsigned long long& hash_val, const unsigned long long& i) const
+//{
+//	/* Get hash value of the next position
+//	 * Subtract hash value of substring[i]
+//	 * Add value of substring[i + pat_len]
+//	 * Divide total by prime number
+//	 */
+//	const auto pos = i + pattern.size();
+//	text_hash_val = (alphabet_ * (text_hash_val - substring[i] * hash_val) + substring[pos]) % prime_;
+//
+//	// if the text hash is below 0
+//	// add prime number to substring hash
+//
+//	if (text_hash_val < 0)
+//		text_hash_val += prime_;
+//
+//	//return text_hash_val;
+//}
 
-	// if the text hash is below 0
-	// add prime number to substring hash
-
-	if (text_hash_val < 0)
-		text_hash_val += prime_;
-
-	//return text_hash_val;
-}
-
-
-long long get_hash_value(const long long pattern_length, long long hash_val, const long long alphabet, const long long prime) {
+long long RabinKarp::get_hash_value(const long long pattern_length, long long hash_val, const long long alphabet, const long long prime) {
 	for (long long i = 0; i < pattern_length - 1; ++i)
 		hash_val = (hash_val * alphabet) % prime;
 	return hash_val;
 }
 
-long long hash_text(std::string text, long long text_hash, const long long pattern_length, const long long alphabet, const long long prime) {
+long long RabinKarp::hash_text(std::string text, long long text_hash, const long long pattern_length, const long long alphabet, const long long prime) {
 	for (long long i = 0; i < pattern_length; ++i)
 		text_hash = (alphabet * text_hash + text[i]) % prime;
 	return text_hash;
 }
 
-long long roll_hash(std::string& text, long long text_hash_val, const long long hash_val, const long long i, const long long pattern_length, const long long alphabet, const long long prime) {
+long long RabinKarp::roll_hash(std::string& text, long long text_hash_val, const long long hash_val, const long long i, const long long pattern_length, const long long alphabet, const long long prime) {
 	/* Get hash value of the next position
 	 * Subtract hash value of text[i]
 	 * Add value of text[i + patlen]
@@ -73,7 +72,7 @@ long long roll_hash(std::string& text, long long text_hash_val, const long long 
 	return text_hash_val;
 }
 
-std::vector<long long> search_rabin_karp(std::string& text, std::string& pattern) {
+std::vector<long long> RabinKarp::search_rabin_karp(std::string& text, std::string& pattern) {
 	// vector to hold returnable data
 	std::vector<long long> matching_indexes;
 	// Get lengths
@@ -176,9 +175,9 @@ void RabinKarp::search_rabin_karp_non_threaded() {
 		}
 
 		// if i is in range
-		if (i < text.size() - pattern.size())
+		if (i < text.size() - pattern.size());
 			// roll the hash to the next check
-			roll_hash(text, text_hash_val, hash_val, i);
+			//roll_hash(text, text_hash_val, hash_val, i);
 	}
 }
 
@@ -233,9 +232,9 @@ void RabinKarp::search_substring(const unsigned long long& start_pos, const unsi
 		}
 
 		// if i is in range
-		if (i < end_pos - pattern.size())
+		if (i < end_pos - pattern.size());
 			// roll the hash to the next check
-			roll_hash(text, text_hash_val, hash_val, i);
+			//roll_hash(text, text_hash_val, hash_val, i);
 	}
 }
 /*
@@ -280,6 +279,7 @@ void RabinKarp::search_substring(unsigned long long start_pos, unsigned long lon
 	}
 }
 */
+
 void RabinKarp::start_rabin_karp_search_threads(const unsigned int& search_thread_count)
 {
 	unsigned long long width = search_thread_width_;
