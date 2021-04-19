@@ -42,96 +42,93 @@ void RabinKarp::roll_hash(const std::string& substring, long long& text_hash_val
 }
 
 
-
-
-
-long long GetHashValue(long long patternLength, long long hashVal, long long alphabet, long long prime) {
-	for (long long i = 0; i < patternLength - 1; ++i)
-		hashVal = (hashVal * alphabet) % prime;
-	return hashVal;
+long long get_hash_value(const long long pattern_length, long long hash_val, const long long alphabet, const long long prime) {
+	for (long long i = 0; i < pattern_length - 1; ++i)
+		hash_val = (hash_val * alphabet) % prime;
+	return hash_val;
 }
 
-long long HashText(std::string text, long long textHash, long long patternLength, long long alphabet, long long prime) {
-	for (long long i = 0; i < patternLength; ++i)
-		textHash = (alphabet * textHash + text[i]) % prime;
-	return textHash;
+long long hash_text(std::string text, long long text_hash, const long long pattern_length, const long long alphabet, const long long prime) {
+	for (long long i = 0; i < pattern_length; ++i)
+		text_hash = (alphabet * text_hash + text[i]) % prime;
+	return text_hash;
 }
 
-long long RollHash(std::string& text, long long textHashVal, long long hashVal, long long i, long long patternLength, long long alphabet, long long prime) {
+long long roll_hash(std::string& text, long long text_hash_val, const long long hash_val, const long long i, const long long pattern_length, const long long alphabet, const long long prime) {
 	/* Get hash value of the next position
 	 * Subtract hash value of text[i]
 	 * Add value of text[i + patlen]
 	 * Divide total by prime number
 	 */
 
-	long long pos = i + patternLength;
-	textHashVal = (alphabet * (textHashVal - text[i] * hashVal) + text[pos]) % prime;
+	long long pos = i + pattern_length;
+	text_hash_val = (alphabet * (text_hash_val - text[i] * hash_val) + text[pos]) % prime;
 
 	// if textHash is below 0
 	// add prime number to text hash
 
-	if (textHashVal < 0)
-		textHashVal += prime;
+	if (text_hash_val < 0)
+		text_hash_val += prime;
 
-	return textHashVal;
+	return text_hash_val;
 }
 
-std::vector<long long> Search_RabinKarp(std::string& text, std::string& pattern) {
+std::vector<long long> search_rabin_karp(std::string& text, std::string& pattern) {
 	// vector to hold returnable data
-	std::vector<long long> matchingIndexes;
+	std::vector<long long> matching_indexes;
 	// Get lengths
-	long long patternLength = pattern.size();
-	long long textLength = text.size();
+	const long long pattern_length = pattern.size();
+	const long long text_length = text.size();
 
 	// Count of possible chars in input
 	const long long alphabet = 256;
 	// Hash value of the pattern
-	long long patternHashVal = 0;
+	long long pattern_hash_val = 0;
 	// Hash value of the text
-	long long textHashVal = 0;
+	long long text_hash_val = 0;
 	// prime number used to calculate hash
 	const long long prime = 17;
 
 	// Calculate the hash value
 	// initialise
-	long long hashVal = 1;
+	long long hash_val = 1;
 	// get hash value
-	hashVal = GetHashValue(patternLength, hashVal, alphabet, prime);
+	hash_val = get_hash_value(pattern_length, hash_val, alphabet, prime);
 
 	// Keep iterators in scope
 	long long i = 0, j = 0;
 
 	// Get hash values of the pattern and text
-	patternHashVal = HashText(pattern, patternHashVal, pattern.size(), alphabet, prime);
-	textHashVal = HashText(text, textHashVal, pattern.size(), alphabet, prime);
+	pattern_hash_val = hash_text(pattern, pattern_hash_val, pattern.size(), alphabet, prime);
+	text_hash_val = hash_text(text, text_hash_val, pattern.size(), alphabet, prime);
 
 	// iterate 0 through textlength - pattern length (last possible pos)
-	for (i = 0; i <= textLength - patternLength; ++i) {
+	for (i = 0; i <= text_length - pattern_length; ++i) {
 		// if the pattern's hash is the same as the text's hash
 		// then it's likely a match
-		if (patternHashVal == textHashVal) {
+		if (pattern_hash_val == text_hash_val) {
 			// iterate each char for the length of the potential match
-			for (j = 0; j < patternLength; j++) {
+			for (j = 0; j < pattern_length; j++) {
 				// check each char
 
-				long long pos = i + j;
+				const auto pos = i + j;
 				if (text[pos] != pattern[j])
 					// break if mismatch
 					break;
 			}
 
 			//  j == patternLength when the two matching hashes have been compared char for char
-			if (j == patternLength)
+			if (j == pattern_length)
 				// add the index to the list of matches
-				matchingIndexes.push_back(i);
+				matching_indexes.push_back(i);
 		}
 
 		// if i is in range
-		if (i < textLength - patternLength)
+		if (i < text_length - pattern_length)
 			// roll the hash to the next check
-			textHashVal = RollHash(text, textHashVal, hashVal, i, pattern.size(), alphabet, prime);
+			text_hash_val = roll_hash(text, text_hash_val, hash_val, i, pattern.size(), alphabet, prime);
 	}
-	return matchingIndexes;
+	return matching_indexes;
 }
 
 
@@ -190,7 +187,7 @@ void RabinKarp::start_non_threaded_search()
 	std::cout << "Rabin Karp non threaded search starting\n";
 	timer.start();
 	//search_rabin_karp_non_threaded();
-	matching_indexes = Search_RabinKarp(text,pattern);
+	matching_indexes = search_rabin_karp(text,pattern);
 	timer.stop();
 }
 
