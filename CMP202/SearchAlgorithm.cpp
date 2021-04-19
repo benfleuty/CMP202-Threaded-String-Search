@@ -96,11 +96,12 @@ void SearchAlgorithm::show_matches()
 
 void SearchAlgorithm::store_match_pos(unsigned long long match_pos)
 {
-	unsigned int t_count = 0;
-	while (text.size() / 17 * t_count < match_pos)
-		t_count++;
-
-	std::cout << "match at [" << match_pos << "] on thread " << t_count << std::endl;
-	std::unique_lock<std::mutex> lock(matching_indexes_mutex);
+	if (threaded) {
+		unsigned int t_count = 0;
+		while (text.size() / 17 * t_count < match_pos)
+			t_count++;
+		std::cout << "match at [" << match_pos << "] on thread " << t_count << std::endl;
+		std::unique_lock<std::mutex> lock(matching_indexes_mutex);
+	}
 	matching_indexes.emplace_back(match_pos);
 }

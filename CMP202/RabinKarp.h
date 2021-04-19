@@ -17,9 +17,9 @@ private:
 
 public:
 	RabinKarp();
-	long long get_hash_value(long long& hash_val) const;
+	unsigned long long calculate_hash_value(unsigned long long& hash_val) const;
 	void hash_substring(const std::string& substring, long long& substring_hash_val) const;
-	void roll_hash(const std::string& substring, long long& text_hash_val, const long long& hash_val, const unsigned long long& i) const;
+	void roll_hash(const std::string& substring, long long& text_hash_val, const unsigned long long& hash_val, const unsigned long long& i) const;
 	void search_rabin_karp_non_threaded();
 	void start_search() override;
 };

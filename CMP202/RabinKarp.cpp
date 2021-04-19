@@ -8,7 +8,7 @@ RabinKarp::RabinKarp()
 	//pattern_hash_val_ = hash_substring(pattern, pattern_hash_val_);
 }
 
-long long RabinKarp::get_hash_value(long long& hash_val) const
+unsigned long long RabinKarp::calculate_hash_value(unsigned long long& hash_val) const
 {
 	for (unsigned long long i = 0; i < pattern.size() - 1; ++i)
 		hash_val = (hash_val * alphabet_) % prime_;
@@ -22,7 +22,7 @@ void RabinKarp::hash_substring(const std::string& substring, long long& substrin
 	//return substring_hash_val;
 }
 
-void RabinKarp::roll_hash(const std::string& substring, long long& text_hash_val, const long long& hash_val, const unsigned long long& i) const
+void RabinKarp::roll_hash(const std::string& substring, long long& text_hash_val, const unsigned long long& hash_val, const unsigned long long& i) const
 {
 	/* Get hash value of the next position
 	 * Subtract hash value of substring[i]
@@ -41,10 +41,104 @@ void RabinKarp::roll_hash(const std::string& substring, long long& text_hash_val
 	//return text_hash_val;
 }
 
-void RabinKarp::search_rabin_karp_non_threaded() {
-	// vector to hold returnable data
-	std::vector<long long> match_indexes;
 
+
+
+
+long long GetHashValue(long long patternLength, long long hashVal, long long alphabet, long long prime) {
+	for (long long i = 0; i < patternLength - 1; ++i)
+		hashVal = (hashVal * alphabet) % prime;
+	return hashVal;
+}
+
+long long HashText(std::string text, long long textHash, long long patternLength, long long alphabet, long long prime) {
+	for (long long i = 0; i < patternLength; ++i)
+		textHash = (alphabet * textHash + text[i]) % prime;
+	return textHash;
+}
+
+long long RollHash(std::string& text, long long textHashVal, long long hashVal, long long i, long long patternLength, long long alphabet, long long prime) {
+	/* Get hash value of the next position
+	 * Subtract hash value of text[i]
+	 * Add value of text[i + patlen]
+	 * Divide total by prime number
+	 */
+
+	long long pos = i + patternLength;
+	textHashVal = (alphabet * (textHashVal - text[i] * hashVal) + text[pos]) % prime;
+
+	// if textHash is below 0
+	// add prime number to text hash
+
+	if (textHashVal < 0)
+		textHashVal += prime;
+
+	return textHashVal;
+}
+
+std::vector<long long> Search_RabinKarp(std::string& text, std::string& pattern) {
+	// vector to hold returnable data
+	std::vector<long long> matchingIndexes;
+	// Get lengths
+	long long patternLength = pattern.size();
+	long long textLength = text.size();
+
+	// Count of possible chars in input
+	const long long alphabet = 256;
+	// Hash value of the pattern
+	long long patternHashVal = 0;
+	// Hash value of the text
+	long long textHashVal = 0;
+	// prime number used to calculate hash
+	const long long prime = 17;
+
+	// Calculate the hash value
+	// initialise
+	long long hashVal = 1;
+	// get hash value
+	hashVal = GetHashValue(patternLength, hashVal, alphabet, prime);
+
+	// Keep iterators in scope
+	long long i = 0, j = 0;
+
+	// Get hash values of the pattern and text
+	patternHashVal = HashText(pattern, patternHashVal, pattern.size(), alphabet, prime);
+	textHashVal = HashText(text, textHashVal, pattern.size(), alphabet, prime);
+
+	// iterate 0 through textlength - pattern length (last possible pos)
+	for (i = 0; i <= textLength - patternLength; ++i) {
+		// if the pattern's hash is the same as the text's hash
+		// then it's likely a match
+		if (patternHashVal == textHashVal) {
+			// iterate each char for the length of the potential match
+			for (j = 0; j < patternLength; j++) {
+				// check each char
+
+				long long pos = i + j;
+				if (text[pos] != pattern[j])
+					// break if mismatch
+					break;
+			}
+
+			//  j == patternLength when the two matching hashes have been compared char for char
+			if (j == patternLength)
+				// add the index to the list of matches
+				matchingIndexes.push_back(i);
+		}
+
+		// if i is in range
+		if (i < textLength - patternLength)
+			// roll the hash to the next check
+			textHashVal = RollHash(text, textHashVal, hashVal, i, pattern.size(), alphabet, prime);
+	}
+	return matchingIndexes;
+}
+
+
+
+
+
+void RabinKarp::search_rabin_karp_non_threaded() {
 	// Hash value of the pattern
 	long long pattern_hash_val = 0;
 	// Hash value of the text
@@ -52,9 +146,9 @@ void RabinKarp::search_rabin_karp_non_threaded() {
 
 	// Calculate the hash value
 	// initialise
-	long long hash_val = 1;
+	unsigned long long hash_val = 1;
 	// get hash value
-	hash_val = get_hash_value(hash_val);
+	hash_val = calculate_hash_value(hash_val);
 
 	// Keep iterators in scope
 	unsigned long long i = 0, j = 0;
@@ -72,7 +166,7 @@ void RabinKarp::search_rabin_karp_non_threaded() {
 			for (j = 0; j < pattern.size(); j++) {
 				// check each char
 
-				const long long pos = i + j;
+				const auto pos = i + j;
 				if (text[pos] != pattern[j])
 					// break if mismatch
 					break;
@@ -81,7 +175,7 @@ void RabinKarp::search_rabin_karp_non_threaded() {
 			//  j == patternLength when the two matching hashes have been compared char for char
 			if (j == pattern.size())
 				// add the index to the list of matches
-				match_indexes.push_back(i);
+				store_match_pos(i);
 		}
 
 		// if i is in range
@@ -89,14 +183,14 @@ void RabinKarp::search_rabin_karp_non_threaded() {
 			// roll the hash to the next check
 			roll_hash(text, text_hash_val, hash_val, i);
 	}
-	matching_indexes = match_indexes;
 }
 
 void RabinKarp::start_non_threaded_search()
 {
 	std::cout << "Rabin Karp non threaded search starting\n";
 	timer.start();
-	search_rabin_karp_non_threaded();
+	//search_rabin_karp_non_threaded();
+	matching_indexes = Search_RabinKarp(text,pattern);
 	timer.stop();
 }
 
@@ -109,9 +203,9 @@ void RabinKarp::search_substring(const unsigned long long& start_pos, const unsi
 
 	// Calculate the hash value
 	// initialise
-	long long hash_val = 1;
+	unsigned long long hash_val = 1;
 	// get hash value
-	hash_val = get_hash_value(hash_val);
+	hash_val = calculate_hash_value(hash_val);
 
 	// Keep iterators in scope
 	unsigned long long j = 0;
@@ -155,7 +249,7 @@ void RabinKarp::search_substring(unsigned long long start_pos, unsigned long lon
 
 	// Calculate the hash value
 	// initialise to 1
-	const long long hash_val = get_hash_value(1);
+	const long long hash_val = calculate_hash_value(1);
 
 	// keep j in scope
 	unsigned long long j;
