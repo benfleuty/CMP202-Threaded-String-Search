@@ -92,7 +92,7 @@ void BoyerMoore::search_substring(unsigned long long start_pos, unsigned long lo
 
 		// the word in text matches the pattern
 		if (j == pattern.size()) {
-			// add the index of the word to matchingIndexes
+			// add the index of the word to matching_indexes
 			// CRITICAL POINT
 			// must lock as writing to vector
 			store_match_pos(i);

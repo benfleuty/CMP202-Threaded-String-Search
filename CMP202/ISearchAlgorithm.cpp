@@ -6,6 +6,16 @@
 std::string ISearchAlgorithm::get_text()
 {
 	std::string input;
+	load_file("search.txt", input);
+	return input;
+
+
+	
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <returns></returns>
+	//std::string input;
 	do
 	{
 		std::cout << "USE ASCII CHARACTERS ONLY\nYOU HAVE BEEN WARNED\nEnter y when the text you want to search is in a text file named \"search.txt\" in the same folder as this .exe\n";

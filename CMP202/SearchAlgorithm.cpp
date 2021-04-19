@@ -10,9 +10,13 @@
 
 SearchAlgorithm::SearchAlgorithm()
 {
+	pattern = "the";
 	pattern = ISearchAlgorithm::get_pattern();
+
 	text = ISearchAlgorithm::get_text();
-	threaded = ISearchAlgorithm::is_threaded();
+	//threaded = ISearchAlgorithm::is_threaded();
+
+	threaded = false;
 }
 
 void SearchAlgorithm::output_search_results()
@@ -38,6 +42,7 @@ std::string timePointAsString(const std::chrono::system_clock::time_point& tp) {
 
 std::string SearchAlgorithm::generate_report()
 {
+	exit(0);
 	// replace matches with span for highlighting in html
 	std::string report_text = reporter::process_body_text(text, pattern);
 
