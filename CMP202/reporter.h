@@ -10,5 +10,7 @@ public:
 
 	static std::string process_body_text(const std::string& text, const std::string& pattern);
 
+	static std::string sanitise_input(const std::string& pattern);
+
 	~reporter();
 };
