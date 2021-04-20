@@ -12,7 +12,7 @@ SearchAlgorithm::SearchAlgorithm()
 {
 	pattern = ISearchAlgorithm::get_pattern();
 	text = ISearchAlgorithm::get_text();
-	threaded = ISearchAlgorithm::is_threaded();
+	threaded = ISearchAlgorithm::is_threaded(); //test
 }
 
 void SearchAlgorithm::output_search_results()
