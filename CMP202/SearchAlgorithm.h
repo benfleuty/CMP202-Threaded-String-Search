@@ -40,6 +40,7 @@ public:
 
 	std::mutex matching_indexes_mutex;
 	std::mutex matched_text_mutex;
-	std::condition_variable progress_cv;
+	std::condition_variable replacer_cv;
+	std::condition_variable replacer_finished_cv;
 	bool progress_ready = false;
 };

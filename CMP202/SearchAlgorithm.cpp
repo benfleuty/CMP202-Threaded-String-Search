@@ -10,24 +10,43 @@
 
 SearchAlgorithm::SearchAlgorithm()
 {
-	pattern = "e"; // ISearchAlgorithm::get_pattern();
+	pattern = "there"; // ISearchAlgorithm::get_pattern();
 	text = ISearchAlgorithm::get_text();
 	threaded = true; // ISearchAlgorithm::is_threaded();
 }
 
 void SearchAlgorithm::output_search_results()
 {
-	//std::cout << matching_indexes.size() << " matches were found in " << timer.elapsed_time_ms() << "ms (" << timer.elapsed_time_us() << "us)" << std::endl;
-	std::cout << match_count_ << " matches were found in " << timer.elapsed_time_ms() << "ms (" << timer.elapsed_time_us() << ")" << std::endl;
-
-	// if there are no matches then don't make a report
-	if (match_count_ == 0) {
-		//if (matching_indexes.empty()) {
-		std::cout << "A report will not be generated..." << std::endl;
-		return;
-	}
-
 	std::cout << "Generating report..." << std::endl;
+	//while (matching_indexes.empty() == false) {}
+	std::unique_lock<std::mutex> matched_text_mutex_lock(matched_text_mutex);
+
+	replacer_finished_cv.wait(matched_text_mutex_lock);
+
+	//std::cout << matching_indexes.size() << " matches were found in " << timer.elapsed_time_ms() << "ms (" << timer.elapsed_time_us() << "us)" << std::endl;
+	std::cout << match_count_ << " matches were found in " << timer.elapsed_time_ms() << "ms (" << timer.elapsed_time_us() << "us)" << std::endl;
+
+	// see if user wants a file generated
+	bool make_report = false;
+	do
+	{
+		std::cout << "\nWould you like to see the matches highlighted in an HTML file? [y/n] ";
+		std::string in;
+		std::getline(std::cin, in);
+		char input = tolower(in[0]);
+
+		if (input == 'y') {
+			make_report = true;
+			break;
+		}
+		if (input == 'n') {
+			make_report = false;
+			break;
+		}
+	} while (true);
+
+	if (!make_report) return;
+
 	std::string report = generate_report();
 	reporter::write_report_to_file(report);
 	show_matches();
@@ -47,7 +66,7 @@ std::string SearchAlgorithm::generate_report()
 	//std::string report_text = reporter::process_body_text(text, pattern);
 	//replace_matches_in_text();
 
-	std::string html = R"(<!DOCTYPE html><html lang="en"><head><title><page_title></title><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/><style>body{width:60%;margin:0 auto; font-size:1.2em;}.match{background-color: cyan;}</style></head><body><date_time_of_search><br/><matches_found><br/><elapsed_time><br/><searched_text></body></html>)";
+	std::string html = R"(<!DOCTYPE html><html lang="en"><head><title><page_title></title><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/><style>body{width:60%;margin:0 auto; font-size:1.2em;}span{background-color: cyan;}</style></head><body><date_time_of_search><br/><matches_found><br/><elapsed_time><br/><searched_text></body></html>)";
 	// add title
 	std::string new_title;
 
@@ -110,8 +129,12 @@ void SearchAlgorithm::store_match_pos(unsigned long long match_pos)
 			t_count++;
 
 		std::unique_lock<std::mutex> lock(matching_indexes_mutex);
+		//std::cout << "Lock Start - " << match_pos << std::endl;
 		//std::cout << "\"" << pattern << "\" matched at [" << match_pos << "] on thread " << t_count << std::endl;
 		matching_indexes.emplace_back(match_pos);
+		//std::cout << "Lock End - " << match_pos << std::endl;
+		progress_ready = true;
+		replacer_cv.notify_one();
 		return;
 	}
 	matching_indexes.emplace_back(match_pos);
@@ -120,18 +143,32 @@ void SearchAlgorithm::store_match_pos(unsigned long long match_pos)
 void SearchAlgorithm::replace_matches_in_text()
 {
 	matched_text = text;
+	std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
+
 	while (true)
 	{
-		std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
+		while (!progress_ready && !search_complete_)
+			replacer_cv.wait(matching_indexes_mutex_lock);
 
 		if (search_complete_ && matching_indexes.empty()) break;
 		if (matching_indexes.empty()) continue;
 
-		std::unique_lock<std::mutex> matched_text_mutex_lock(matched_text_mutex);
+		//std::cout << "replacer starting" << std::endl;
 
+		progress_ready = false;
+
+		std::unique_lock<std::mutex> matched_text_mutex_lock(matched_text_mutex);
 		unsigned long long pos = matching_indexes.back();
 		unsigned long long pos_keep = pos;
 		matching_indexes.pop_back();
+
+		/*-----------------//
+
+		match_count_++;
+		std::cout << "replacer done\n" << match_count_ << std::endl;
+		continue;
+
+		//-----------------*/
 
 		std::string substring = matched_text.substr(pos, pattern.size());
 
@@ -159,11 +196,25 @@ void SearchAlgorithm::replace_matches_in_text()
 
 		while (substring != pattern || substring == pattern && matched_text[pos - 1] == '>')
 		{
-			if (pos + 1 + pattern.size() < matched_text.size())
+			if (matched_text[pos - 1] == '>')
+			{
+				if (pos + 11 + pattern.size() >= matched_text.size()) break;
+				pos += 11;
+			}
+			else if (pos + 1 < matched_text.size())
 				pos++;
-			else if (pos + 1 + pattern.size() >= matched_text.size()) break;
 			substring = matched_text.substr(pos, pattern.size());
+			/*
+			if (pos + 1 + pattern.size() < matched_text.size())
+				pos += 1 + pattern.size();
+
+			else if (pos + 1 + pattern.size() >= matched_text.size()) break;
+
+			substring = matched_text.substr(pos, pattern.size());
+			*/
 		}
+
+		if (pos >= matched_text.size()) break;
 
 		std::string left = matched_text.substr(0, pos);
 		std::string right = matched_text.substr(pos + pattern.size(), matched_text.size());
@@ -174,10 +225,14 @@ void SearchAlgorithm::replace_matches_in_text()
 
 		match_count_++;
 		//std::cout << "Replaced match at text[" << pos_keep << "]" << std::endl;
+		//std::cout << "item replaced" << std::endl;
 	}
+	//std::cout << "replacer finished\n";
+	replacer_finished_cv.notify_one();
 }
 
 std::string SearchAlgorithm::pattern_html() const
 {
-	return R"(<span class="match">)" + pattern + R"(</span>)";
+	return R"(<span>)" + pattern + R"(</span>)";
+	//return R"(<span class="match">)" + pattern + R"(</span>)";
 }
