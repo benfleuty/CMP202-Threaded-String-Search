@@ -12,7 +12,7 @@ SearchAlgorithm::SearchAlgorithm()
 {
 	pattern = ISearchAlgorithm::get_pattern();
 	text = ISearchAlgorithm::get_text();
-	threaded = ISearchAlgorithm::is_threaded();
+	threaded = ISearchAlgorithm::is_threaded(); //test
 }
 
 void SearchAlgorithm::output_search_results()
@@ -98,10 +98,12 @@ void SearchAlgorithm::show_matches()
 void SearchAlgorithm::store_match_pos(unsigned long long match_pos)
 {
 	if (threaded) {
+		/*
 		unsigned int t_count = 0;
 		while (text.size() / 17 * t_count < match_pos)
 			t_count++;
 		std::cout << pattern << " matched at [" << match_pos << "] on thread " << t_count << std::endl;
+		*/
 		std::unique_lock<std::mutex> lock(matching_indexes_mutex);
 		matching_indexes.emplace_back(match_pos);
 		return;

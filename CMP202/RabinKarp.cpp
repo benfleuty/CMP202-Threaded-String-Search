@@ -200,7 +200,7 @@ void RabinKarp::start_threaded_search()
 	// e.g. 1999 chars spread over 15 threads = 133 positions on threads 1-14 and 138 on thread 15
 	search_thread_width_ = text.size() / num_of_search_threads;
 
-	std::cout << "\nTotal threads: " << num_of_threads
+	std::cout << "\nConcurrent Threads: " << num_of_threads
 		<< "\nSearch threads: " << num_of_search_threads
 		<< "\nText size: " << text.size()
 		<< "\nSearch for: " << pattern
