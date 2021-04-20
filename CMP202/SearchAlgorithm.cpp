@@ -10,13 +10,9 @@
 
 SearchAlgorithm::SearchAlgorithm()
 {
-	pattern = "the";
 	pattern = ISearchAlgorithm::get_pattern();
-
 	text = ISearchAlgorithm::get_text();
-	//threaded = ISearchAlgorithm::is_threaded();
-
-	threaded = false;
+	threaded = ISearchAlgorithm::is_threaded();
 }
 
 void SearchAlgorithm::output_search_results()
@@ -105,8 +101,10 @@ void SearchAlgorithm::store_match_pos(unsigned long long match_pos)
 		unsigned int t_count = 0;
 		while (text.size() / 17 * t_count < match_pos)
 			t_count++;
-		std::cout << "match at [" << match_pos << "] on thread " << t_count << std::endl;
+		std::cout << pattern << " matched at [" << match_pos << "] on thread " << t_count << std::endl;
 		std::unique_lock<std::mutex> lock(matching_indexes_mutex);
+		matching_indexes.emplace_back(match_pos);
+		return;
 	}
 	matching_indexes.emplace_back(match_pos);
 }
