@@ -139,7 +139,7 @@ void BoyerMoore::start_threaded_search()
 	// num_of_threads = 0 if it cannot get the info
 	while (num_of_threads == 0)
 	{
-		std::cout << "Your CPU count could not be automatically configured!\nPlease enter the number of threads your CPU has: ";
+		std::cout << "Your CPU count could not be automatically configured!\nPlease enter the number of threads your CPU can run concurrently: ";
 		std::string input;
 		std::getline(std::cin, input);
 		// try to convert input from string to int
