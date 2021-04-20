@@ -141,6 +141,9 @@ void RabinKarp::start_search_threads(const unsigned int& search_thread_count)
 	unsigned long long end_pos = 0;
 	// start search threads X1 to Xn-2
 	std::vector<std::thread> threads;
+
+	std::thread match_replacer_thread(&RabinKarp::replace_matches_in_text, this);
+
 	for (unsigned int i = 1; i < search_thread_count; ++i)
 	{
 		// start_pos is the value of the search width multiplied by the number of threads that have already been started (i-1)
@@ -156,8 +159,10 @@ void RabinKarp::start_search_threads(const unsigned int& search_thread_count)
 	end_pos = text.size();
 	threads.emplace_back(std::thread(&RabinKarp::search_substring, this, start_pos, end_pos));
 
-	// join all threads
+	// join all search threads
 	for (auto& thread : threads) thread.join();
+	search_complete_ = true;
+	match_replacer_thread.join();
 }
 
 void RabinKarp::start_threaded_search()
@@ -183,7 +188,7 @@ void RabinKarp::start_threaded_search()
 		catch (...) {}
 	}
 
-	const unsigned int num_of_search_threads = num_of_threads + 1;
+	const unsigned int num_of_search_threads = num_of_threads;
 
 	// if there are more threads than chars to search
 	// don't bother with threading

@@ -8,12 +8,19 @@
 
 class SearchAlgorithm : public ISearchAlgorithm
 {
+	std::string pattern_html() const;
+
 protected:
 	unsigned long long search_thread_width_ = 0;
+	bool search_complete_ = false;
+	void replace_matches_in_text();
+
+	unsigned long long match_count_;
 
 public:
 	std::string pattern;
 	std::string text;
+	std::string matched_text;
 	std::vector<long long> matching_indexes;
 	enum class algorithm_type { not_set, boyer_moore, rabin_karp };
 	algorithm_type type;
@@ -32,6 +39,7 @@ public:
 	virtual void start_search() = 0;
 
 	std::mutex matching_indexes_mutex;
+	std::mutex matched_text_mutex;
 	std::condition_variable progress_cv;
-	bool progress_ready_ = false;
+	bool progress_ready = false;
 };
