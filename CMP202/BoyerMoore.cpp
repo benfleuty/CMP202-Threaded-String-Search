@@ -69,7 +69,7 @@ std::vector<long long> BoyerMoore::non_threaded_search() {
 void BoyerMoore::search_substring(unsigned long long start_pos, unsigned long long end_pos)
 {
 	std::vector<std::thread> write_threads;
-	for (unsigned long long i = start_pos; i < end_pos; ++i) {
+	for (unsigned long long i = start_pos; i < end_pos - 1; ++i) {
 		// check if the last character in the pattern is a match
 		const unsigned long long pos = i + pattern.size() - 1;		// no need to lock this as it is a read
 		const unsigned long long distance = skip_table[text[pos]];	// no need to lock this as it is a read
@@ -98,6 +98,7 @@ void BoyerMoore::search_substring(unsigned long long start_pos, unsigned long lo
 			store_match_pos(i);
 		}
 	}
+	std::cout << "\nThread finished: [" << start_pos << "] - [" << end_pos << "]\n";
 }
 
 void BoyerMoore::start_boyer_moore_search_threads(const unsigned int& search_thread_count)
@@ -107,7 +108,8 @@ void BoyerMoore::start_boyer_moore_search_threads(const unsigned int& search_thr
 	unsigned long long end_pos = 0;
 	// start search threads X1 to Xn-2
 	std::vector<std::thread> threads;
-	//timer.start();
+	std::thread match_replacer_thread(&BoyerMoore::replace_matches_in_text, this);
+
 	for (unsigned int i = 1; i < search_thread_count; ++i)
 	{
 		// start_pos is the value of the search width multiplied by the number of threads that have already been started (i-1)
@@ -125,7 +127,8 @@ void BoyerMoore::start_boyer_moore_search_threads(const unsigned int& search_thr
 
 	// join all threads
 	for (auto& thread : threads) thread.join();
-	//timer.stop();
+	search_complete_ = true;
+	match_replacer_thread.join();
 }
 
 void BoyerMoore::start_threaded_search()
@@ -177,7 +180,7 @@ void BoyerMoore::start_threaded_search()
 BoyerMoore::BoyerMoore()
 {
 	type = algorithm_type::boyer_moore;
-	for (long long& i : skip_table)
+	for (auto& i : skip_table)
 		i = pattern.size();
 
 	// for each of the characters in the pattern
