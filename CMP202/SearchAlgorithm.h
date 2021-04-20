@@ -9,8 +9,6 @@
 class SearchAlgorithm : public ISearchAlgorithm
 {
 protected:
-	unsigned int total_threads_size_ = 0;
-	unsigned int search_threads_size_ = 0;
 	unsigned long long search_thread_width_ = 0;
 
 public:
