@@ -38,7 +38,6 @@ std::string timePointAsString(const std::chrono::system_clock::time_point& tp) {
 
 std::string SearchAlgorithm::generate_report()
 {
-	exit(0);
 	// replace matches with span for highlighting in html
 	std::string report_text = reporter::process_body_text(text, pattern);
 

@@ -26,12 +26,9 @@ void RabinKarp::hash_pattern() {
 
 void RabinKarp::start_search()
 {
-	start_threaded_search();
-	/*
 	if (threaded)
 		start_threaded_search();
 	else start_non_threaded_search();
-	*/
 }
 
 // shared
