@@ -53,6 +53,7 @@ void RabinKarp::roll_hash(long long& text_hash_val, const unsigned long long i) 
 }
 
 // non threaded
+
 void RabinKarp::start_non_threaded_search()
 {
 	std::cout << "Rabin Karp non threaded search starting\n";
