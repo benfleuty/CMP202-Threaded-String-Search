@@ -53,7 +53,7 @@ void SearchAlgorithm::output_search_results()
 }
 
 // Thanks to https://gist.github.com/polaris/adee936198995a6f8c697c419d21f734
-std::string timePointAsString(const std::chrono::system_clock::time_point& tp) {
+std::string time_point_as_string(const std::chrono::system_clock::time_point& tp) {
 	std::time_t t = std::chrono::system_clock::to_time_t(tp);
 	std::string ts = std::ctime(&t);
 	ts.resize(ts.size() - 1);
@@ -89,7 +89,7 @@ std::string SearchAlgorithm::generate_report()
 	// Get the current time to record on the search.
 	std::chrono::system_clock::time_point now_tp = std::chrono::system_clock::now();
 	// to string
-	std::string now = timePointAsString(now_tp);
+	std::string now = time_point_as_string(now_tp);
 	// remove colons from the datetime
 	std::string delim = ".";
 	std::string file_friendly_time = reporter::regex_text_replacer(now, ":", delim);
