@@ -5,6 +5,9 @@
 #include<string>
 #include<ctime>
 #include <mutex>
+#include <regex>
+#include "utils.h"
+#include <boost/regex.hpp>
 
 #include "reporter.h"
 
@@ -13,6 +16,7 @@ SearchAlgorithm::SearchAlgorithm()
 	pattern = "there"; // ISearchAlgorithm::get_pattern();
 	text = ISearchAlgorithm::get_text();
 	threaded = true; // ISearchAlgorithm::is_threaded();
+	matched_text = text;
 }
 
 void SearchAlgorithm::output_search_results()
@@ -21,7 +25,7 @@ void SearchAlgorithm::output_search_results()
 	//while (matching_indexes.empty() == false) {}
 	std::unique_lock<std::mutex> matched_text_mutex_lock(matched_text_mutex);
 
-	replacer_finished_cv.wait(matched_text_mutex_lock);
+	//replacer_finished_cv.wait(matched_text_mutex_lock);
 
 	//std::cout << matching_indexes.size() << " matches were found in " << timer.elapsed_time_ms() << "ms (" << timer.elapsed_time_us() << "us)" << std::endl;
 	std::cout << match_count_ << " matches were found in " << timer.elapsed_time_ms() << "ms (" << timer.elapsed_time_us() << "us)" << std::endl;
@@ -132,6 +136,7 @@ void SearchAlgorithm::store_match_pos(unsigned long long match_pos)
 		//std::cout << "Lock Start - " << match_pos << std::endl;
 		//std::cout << "\"" << pattern << "\" matched at [" << match_pos << "] on thread " << t_count << std::endl;
 		matching_indexes.emplace_back(match_pos);
+		lock.unlock();
 		//std::cout << "Lock End - " << match_pos << std::endl;
 		progress_ready = true;
 		replacer_cv.notify_one();
@@ -140,81 +145,207 @@ void SearchAlgorithm::store_match_pos(unsigned long long match_pos)
 	matching_indexes.emplace_back(match_pos);
 }
 
+//void SearchAlgorithm::replace_matches_in_text()
+//{
+//	matched_text = text;
+//	std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
+//	std::string rgx = R"((?<!>)()" + pattern + ")";
+//	const boost::regex regex_pattern{ rgx };
+//
+//	int x = 0;
+//	
+//	while (true)
+//	{
+//		while (!progress_ready && !search_complete_)
+//			replacer_cv.wait(matching_indexes_mutex_lock);
+//
+//		if (search_complete_ && matching_indexes.empty()) break;
+//		if (matching_indexes.empty()) continue;
+//
+//		std::cout << "replacer starting" << std::endl;
+//
+//		progress_ready = false;
+//
+//		std::unique_lock<std::mutex> matched_text_mutex_lock(matched_text_mutex);
+//		matching_indexes.pop_back();
+//		
+//		matched_text = boost::regex_replace(matched_text, regex_pattern, pattern_html(),boost::format_first_only);
+//		
+//		match_count_++;
+//		std::cout << "Replaced match at text[" << pos_keep << "]" << std::endl;
+//		std::cout << "item replaced" << std::endl;
+//		std::cout << x << std::endl;
+//		if (++x >= 100) break;
+//	}
+//	std::cout << "replacer finished\n";
+//	replacer_finished_cv.notify_one();
+//}
+
+//void SearchAlgorithm::replace_matches_in_text()
+//{
+//	std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
+//	unsigned long long pos = matching_indexes.back();
+//	matching_indexes.pop_back();
+//	matching_indexes_mutex_lock.release();
+//	
+//	show_context(text, pos);
+//
+//
+//	
+//	//
+//	//matched_text = text;
+//	//std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
+//
+//
+//	//
+//	//while (true)
+//	//{
+//	//	while (!progress_ready && !search_complete_)
+//	//		replacer_cv.wait(matching_indexes_mutex_lock);
+//
+//	//	if (search_complete_ && matching_indexes.empty()) break;
+//	//	if (matching_indexes.empty()) continue;
+//
+//	//	//std::cout << "replacer starting" << std::endl;
+//
+//	//	progress_ready = false;
+//
+//	//	std::unique_lock<std::mutex> matched_text_mutex_lock(matched_text_mutex);
+//	//	unsigned long long pos = matching_indexes.back();
+//	//	unsigned long long pos_keep = pos;
+//	//	matching_indexes.pop_back();
+//
+//	//	/*-----------------//
+//
+//	//	match_count_++;
+//	//	std::cout << "replacer done\n" << match_count_ << std::endl;
+//	//	continue;
+//
+//	//	//-----------------*/
+//
+//	//	std::string substring = matched_text.substr(pos, pattern.size());
+//
+//	//	/*
+//	//	 * a: substring != pattern
+//	//	 * b: matched_text[pos - 1] != '>'
+//	//	 *
+//	//	 * Logic: ¬a + ¬a.b
+//	//	*/
+//	//	/*
+//	//	while (true)
+//	//	{
+//	//		// if not the pattern
+//	//		if(substring != pattern)
+//	//		{
+//	//			pos++;
+//	//		}
+//
+//	//		if(matched_text[pos-1] == '>')
+//	//		{
+//	//			pos++;
+//	//		}
+//	//	}
+//	//	*/
+//
+//	//	while (substring != pattern || substring == pattern && matched_text[pos - 1] == '>')
+//	//	{
+//	//		//if (matched_text[pos - 1] == '>')
+//	//		if(substring != pattern)
+//	//		{
+//	//			if (pos + 11 + pattern.size() >= matched_text.size()) break;
+//	//			pos += 11;
+//	//		}
+//	//		else if (pos + 1 < matched_text.size())
+//	//			pos++;
+//	//		substring = matched_text.substr(pos, pattern.size());
+//	//		/*
+//	//		if (pos + 1 + pattern.size() < matched_text.size())
+//	//			pos += 1 + pattern.size();
+//
+//	//		else if (pos + 1 + pattern.size() >= matched_text.size()) break;
+//
+//	//		substring = matched_text.substr(pos, pattern.size());
+//	//		*/
+//	//	}
+//
+//	//	if (pos >= matched_text.size()) break;
+//
+//	//	std::string left = matched_text.substr(0, pos);
+//	//	std::string right = matched_text.substr(pos + pattern.size(), matched_text.size());
+//
+//	//	matched_text = left;
+//	//	matched_text += pattern_html();
+//	//	matched_text += right;
+//
+//	//	match_count_++;
+//	//	//std::cout << "Replaced match at text[" << pos_keep << "]" << std::endl;
+//	//	//std::cout << "item replaced" << std::endl;
+//	//}
+//	////std::cout << "replacer finished\n";
+//	//replacer_finished_cv.notify_one();
+//}
+
 void SearchAlgorithm::replace_matches_in_text()
 {
-	matched_text = text;
-	std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
+	/*
+	while(!matching_indexes.empty() || matching_indexes.empty() && search_complete_ == false )
+	{
+		std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
+		if (!matching_indexes.empty())
+		{
+			unsigned long long pos = matching_indexes.back();
+			matching_indexes.pop_back();
+			match_count_++;
+			matching_indexes_mutex_lock.unlock();
+			//show_context(text, pos);
+			//std::cout << match_count_ << "\n";
+		}
+	}
+	return;
+	//matched_text = text;
+	*/
 
 	while (true)
 	{
+		std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
+
 		while (!progress_ready && !search_complete_)
 			replacer_cv.wait(matching_indexes_mutex_lock);
 
 		if (search_complete_ && matching_indexes.empty()) break;
 		if (matching_indexes.empty()) continue;
 
-		//std::cout << "replacer starting" << std::endl;
-
 		progress_ready = false;
 
-		std::unique_lock<std::mutex> matched_text_mutex_lock(matched_text_mutex);
 		unsigned long long pos = matching_indexes.back();
 		unsigned long long pos_keep = pos;
 		matching_indexes.pop_back();
+		matching_indexes_mutex_lock.unlock();
 
-		/*-----------------//
 
-		match_count_++;
-		std::cout << "replacer done\n" << match_count_ << std::endl;
-		continue;
-
-		//-----------------*/
-
+		std::unique_lock<std::mutex> matched_text_mutex_lock(matched_text_mutex);
 		std::string substring = matched_text.substr(pos, pattern.size());
-
-		/*
-		 * a: substring != pattern
-		 * b: matched_text[pos - 1] != '>'
-		 *
-		 * Logic: ¬a + ¬a.b
-		*/
-		/*
-		while (true)
-		{
-			// if not the pattern
-			if(substring != pattern)
-			{
-				pos++;
-			}
-
-			if(matched_text[pos-1] == '>')
-			{
-				pos++;
-			}
-		}
-		*/
 
 		while (substring != pattern || substring == pattern && matched_text[pos - 1] == '>')
 		{
-			if (matched_text[pos - 1] == '>')
+			/*
+			//if (matched_text[pos - 1] == '>')
+			if(substring != pattern)
 			{
-				if (pos + 11 + pattern.size() >= matched_text.size()) break;
-				pos += 11;
+				if (pos + 13 + pattern.size() >= matched_text.size()) break;
+				pos += 13;
 			}
 			else if (pos + 1 < matched_text.size())
 				pos++;
-			substring = matched_text.substr(pos, pattern.size());
-			/*
-			if (pos + 1 + pattern.size() < matched_text.size())
-				pos += 1 + pattern.size();
+				*/
 
-			else if (pos + 1 + pattern.size() >= matched_text.size()) break;
 
+			if (pos + 13 + pattern.size() >= matched_text.size()) break;
+			pos += 13;
 			substring = matched_text.substr(pos, pattern.size());
-			*/
 		}
 
-		if (pos >= matched_text.size()) break;
+		if (pos + 13 + pattern.size() >= matched_text.size()) break;
 
 		std::string left = matched_text.substr(0, pos);
 		std::string right = matched_text.substr(pos + pattern.size(), matched_text.size());
@@ -225,7 +356,8 @@ void SearchAlgorithm::replace_matches_in_text()
 
 		match_count_++;
 		//std::cout << "Replaced match at text[" << pos_keep << "]" << std::endl;
-		//std::cout << "item replaced" << std::endl;
+		//std::cout << "item replaced at " << pos << std::endl;
+	//std::cout << "matches found:" << match_count_ << std::endl;
 	}
 	//std::cout << "replacer finished\n";
 	replacer_finished_cv.notify_one();

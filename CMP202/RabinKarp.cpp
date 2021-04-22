@@ -138,7 +138,6 @@ void RabinKarp::start_search_threads(const unsigned int& search_thread_count)
 	std::vector<std::thread> search_threads;
 	std::vector<std::thread> replacer_threads;
 
-	replacer_threads.emplace_back(std::thread(&RabinKarp::replace_matches_in_text, this));
 
 	for (unsigned int i = 1; i < search_thread_count; ++i)
 	{
@@ -159,23 +158,24 @@ void RabinKarp::start_search_threads(const unsigned int& search_thread_count)
 
 	//while (threads.empty() == false)
 	//{
+
 	while (search_threads.empty() == false)
+	{
 		for (size_t thread = 0; thread < search_threads.size(); ++thread)
 		{
 			if (search_threads[thread].joinable()) {
+				replacer_threads.emplace_back(std::thread(&RabinKarp::replace_matches_in_text, this));
 				search_threads[thread].join();
 				search_threads.erase(search_threads.begin() + thread);
-				replacer_threads.emplace_back(std::thread(&RabinKarp::replace_matches_in_text, this));
 			}
 		}
-	//}
+	}
+	
 	search_complete_ = true;
-	timer.stop();
 	replacer_cv.notify_all();
-
-	//std::cout << "replacer wait" << std::endl;
+	
 	for (auto& thread : replacer_threads)
-		thread.detach();
+		thread.join();
 }
 
 void RabinKarp::start_threaded_search()
@@ -223,5 +223,5 @@ void RabinKarp::start_threaded_search()
 		<< "\nSearch thread width: " << search_thread_width_ << std::endl;
 
 	start_search_threads(num_of_search_threads);
-	//timer.stop();
+	timer.stop();
 }
