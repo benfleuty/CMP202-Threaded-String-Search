@@ -13,7 +13,7 @@
 
 SearchAlgorithm::SearchAlgorithm()
 {
-	pattern = "there"; // ISearchAlgorithm::get_pattern();
+	pattern = "the";// ISearchAlgorithm::get_pattern();
 	text = ISearchAlgorithm::get_text();
 	threaded = true; // ISearchAlgorithm::is_threaded();
 	matched_text = text;
@@ -22,14 +22,12 @@ SearchAlgorithm::SearchAlgorithm()
 void SearchAlgorithm::output_search_results()
 {
 	std::cout << "Generating report..." << std::endl;
-	//while (matching_indexes.empty() == false) {}
-	std::unique_lock<std::mutex> matched_text_mutex_lock(matched_text_mutex);
 
-	//replacer_finished_cv.wait(matched_text_mutex_lock);
-
-	//std::cout << matching_indexes.size() << " matches were found in " << timer.elapsed_time_ms() << "ms (" << timer.elapsed_time_us() << "us)" << std::endl;
+	std::unique_lock<std::mutex> lock(matching_indexes_mutex);
+	while(!output_finished){}
+	
 	std::cout << match_count_ << " matches were found in " << timer.elapsed_time_ms() << "ms (" << timer.elapsed_time_us() << "us)" << std::endl;
-
+	/*
 	// see if user wants a file generated
 	bool make_report = false;
 	do
@@ -50,10 +48,12 @@ void SearchAlgorithm::output_search_results()
 	} while (true);
 
 	if (!make_report) return;
+	
 
 	std::string report = generate_report();
 	reporter::write_report_to_file(report);
 	show_matches();
+	*/
 }
 
 // Thanks to https://gist.github.com/polaris/adee936198995a6f8c697c419d21f734
@@ -64,66 +64,66 @@ std::string time_point_as_string(const std::chrono::system_clock::time_point& tp
 	return ts;
 }
 
-std::string SearchAlgorithm::generate_report()
-{
-	// replace matches with span for highlighting in html
-	//std::string report_text = reporter::process_body_text(text, pattern);
-	//replace_matches_in_text();
+//std::string SearchAlgorithm::generate_report()
+//{
+//	// replace matches with span for highlighting in html
+//	//std::string report_text = reporter::process_body_text(text, pattern);
+//	//replace_matches_in_text();
+//
+//	std::string html = R"(<!DOCTYPE html><html lang="en"><head><title><page_title></title><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/><style>body{width:60%;margin:0 auto; font-size:1.2em;}span{background-color: cyan;}</style></head><body><date_time_of_search><br/><matches_found><br/><elapsed_time><br/><searched_text></body></html>)";
+//	// add title
+//	std::string new_title;
+//
+//	if (type == algorithm_type::boyer_moore)
+//		new_title += "Boyer Moore ";
+//	else if (type == algorithm_type::rabin_karp)
+//		new_title += "Rabin Karp ";
+//
+//	new_title += "String Search ";
+//
+//	if (!threaded)
+//		new_title += "Non-";
+//	new_title += "Threaded";
+//
+//	std::string elapsed_time = std::to_string(timer.elapsed_time_ms());
+//	elapsed_time += "ms (";
+//	elapsed_time += std::to_string(timer.elapsed_time_us());
+//	elapsed_time += "us)";
+//
+//	// Get the current time to record on the search.
+//	std::chrono::system_clock::time_point now_tp = std::chrono::system_clock::now();
+//	// to string
+//	std::string now = time_point_as_string(now_tp);
+//	// remove colons from the datetime
+//	std::string delim = ".";
+//	std::string file_friendly_time = reporter::regex_text_replacer(now, ":", delim);
+//	reporter::report_name = new_title + " " + file_friendly_time + ".html";
+//	std::string doc_time = "Search Date & Time: " + now;
+//
+//	// matching_indexes.size() to string
+//	std::string match_count = std::to_string(match_count_) + " matches";
+//	//std::string match_count = std::to_string(matching_indexes.size()) + " matches";
+//
+//	// replace <title>
+//	html = reporter::regex_text_replacer(html, "<page_title>", new_title);
+//	// replace <date_time_of_search>
+//	html = reporter::regex_text_replacer(html, "<date_time_of_search>", doc_time);
+//	// replace <matches_found>
+//	html = reporter::regex_text_replacer(html, "<matches_found>", match_count);
+//	// replace <elapsed_time>
+//	html = reporter::regex_text_replacer(html, "<elapsed_time>", elapsed_time);
+//	// replace <searched_text> with highlighted text
+//	//html = reporter::regex_text_replacer(html, "<searched_text>", report_text);
+//	html = reporter::regex_text_replacer(html, "<searched_text>", matched_text);
+//
+//	return html;
+//}
 
-	std::string html = R"(<!DOCTYPE html><html lang="en"><head><title><page_title></title><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/><style>body{width:60%;margin:0 auto; font-size:1.2em;}span{background-color: cyan;}</style></head><body><date_time_of_search><br/><matches_found><br/><elapsed_time><br/><searched_text></body></html>)";
-	// add title
-	std::string new_title;
-
-	if (type == algorithm_type::boyer_moore)
-		new_title += "Boyer Moore ";
-	else if (type == algorithm_type::rabin_karp)
-		new_title += "Rabin Karp ";
-
-	new_title += "String Search ";
-
-	if (!threaded)
-		new_title += "Non-";
-	new_title += "Threaded";
-
-	std::string elapsed_time = std::to_string(timer.elapsed_time_ms());
-	elapsed_time += "ms (";
-	elapsed_time += std::to_string(timer.elapsed_time_us());
-	elapsed_time += "us)";
-
-	// Get the current time to record on the search.
-	std::chrono::system_clock::time_point now_tp = std::chrono::system_clock::now();
-	// to string
-	std::string now = time_point_as_string(now_tp);
-	// remove colons from the datetime
-	std::string delim = ".";
-	std::string file_friendly_time = reporter::regex_text_replacer(now, ":", delim);
-	reporter::report_name = new_title + " " + file_friendly_time + ".html";
-	std::string doc_time = "Search Date & Time: " + now;
-
-	// matching_indexes.size() to string
-	std::string match_count = std::to_string(match_count_) + " matches";
-	//std::string match_count = std::to_string(matching_indexes.size()) + " matches";
-
-	// replace <title>
-	html = reporter::regex_text_replacer(html, "<page_title>", new_title);
-	// replace <date_time_of_search>
-	html = reporter::regex_text_replacer(html, "<date_time_of_search>", doc_time);
-	// replace <matches_found>
-	html = reporter::regex_text_replacer(html, "<matches_found>", match_count);
-	// replace <elapsed_time>
-	html = reporter::regex_text_replacer(html, "<elapsed_time>", elapsed_time);
-	// replace <searched_text> with highlighted text
-	//html = reporter::regex_text_replacer(html, "<searched_text>", report_text);
-	html = reporter::regex_text_replacer(html, "<searched_text>", matched_text);
-
-	return html;
-}
-
-void SearchAlgorithm::show_matches()
-{
-	std::string cmd = "start \"\" \"" + reporter::report_name + "\"";
-	system(cmd.c_str());
-}
+//void SearchAlgorithm::show_matches()
+//{
+//	std::string cmd = "start \"\" \"" + reporter::report_name + "\"";
+//	system(cmd.c_str());
+//}
 
 void SearchAlgorithm::store_match_pos(unsigned long long match_pos)
 {
@@ -139,11 +139,38 @@ void SearchAlgorithm::store_match_pos(unsigned long long match_pos)
 		lock.unlock();
 		//std::cout << "Lock End - " << match_pos << std::endl;
 		progress_ready = true;
-		replacer_cv.notify_one();
+		output_cv.notify_one();
 		return;
 	}
 	matching_indexes.emplace_back(match_pos);
 }
+
+
+void SearchAlgorithm::output_match()
+{
+	std::unique_lock<std::mutex> lock(matching_indexes_mutex);
+
+	while(true)
+	{
+		while (!progress_ready && !search_complete_)
+			output_cv.wait(lock);
+
+		progress_ready = false;
+		if (matching_indexes.empty()) {
+			if (search_complete_) break;
+			continue;
+		}
+		size_t pos = matching_indexes.back();
+		matching_indexes.pop_back();
+		if(!benchmarked)
+			show_context(text, pos);
+		match_count_++;
+	}
+
+	output_finished = true;
+	
+}
+
 
 //void SearchAlgorithm::replace_matches_in_text()
 //{
@@ -157,7 +184,7 @@ void SearchAlgorithm::store_match_pos(unsigned long long match_pos)
 //	while (true)
 //	{
 //		while (!progress_ready && !search_complete_)
-//			replacer_cv.wait(matching_indexes_mutex_lock);
+//			output_cv.wait(matching_indexes_mutex_lock);
 //
 //		if (search_complete_ && matching_indexes.empty()) break;
 //		if (matching_indexes.empty()) continue;
@@ -183,37 +210,33 @@ void SearchAlgorithm::store_match_pos(unsigned long long match_pos)
 
 //void SearchAlgorithm::replace_matches_in_text()
 //{
-//	std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
-//	unsigned long long pos = matching_indexes.back();
-//	matching_indexes.pop_back();
-//	matching_indexes_mutex_lock.release();
-//	
-//	show_context(text, pos);
-//
-//
-//	
-//	//
-//	//matched_text = text;
 //	//std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
+//	//unsigned long long pos = matching_indexes.back();
+//	//matching_indexes.pop_back();
+//	//matching_indexes_mutex_lock.release();
+//	
+//	//show_context(text, pos);
 //
+//	const size_t replacer_skip_value = pattern_html().size() - pattern.size();
+//	
+//	std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
 //
-//	//
-//	//while (true)
-//	//{
-//	//	while (!progress_ready && !search_complete_)
-//	//		replacer_cv.wait(matching_indexes_mutex_lock);
+//	while (true)
+//	{
+//		while (!progress_ready && !search_complete_)
+//			output_cv.wait(matching_indexes_mutex_lock);
 //
-//	//	if (search_complete_ && matching_indexes.empty()) break;
-//	//	if (matching_indexes.empty()) continue;
+//		if (search_complete_ && matching_indexes.empty()) break;
+//		if (matching_indexes.empty()) continue;
 //
-//	//	//std::cout << "replacer starting" << std::endl;
+//		//std::cout << "replacer starting" << std::endl;
 //
-//	//	progress_ready = false;
+//		progress_ready = false;
 //
-//	//	std::unique_lock<std::mutex> matched_text_mutex_lock(matched_text_mutex);
-//	//	unsigned long long pos = matching_indexes.back();
-//	//	unsigned long long pos_keep = pos;
-//	//	matching_indexes.pop_back();
+//		unsigned long long pos = matching_indexes.back();
+//		matching_indexes.pop_back();
+//
+//		matching_indexes_mutex_lock.unlock();
 //
 //	//	/*-----------------//
 //
@@ -223,7 +246,7 @@ void SearchAlgorithm::store_match_pos(unsigned long long match_pos)
 //
 //	//	//-----------------*/
 //
-//	//	std::string substring = matched_text.substr(pos, pattern.size());
+//		std::string substring = matched_text.substr(pos, pattern.size());
 //
 //	//	/*
 //	//	 * a: substring != pattern
@@ -247,124 +270,139 @@ void SearchAlgorithm::store_match_pos(unsigned long long match_pos)
 //	//	}
 //	//	*/
 //
-//	//	while (substring != pattern || substring == pattern && matched_text[pos - 1] == '>')
-//	//	{
-//	//		//if (matched_text[pos - 1] == '>')
-//	//		if(substring != pattern)
-//	//		{
-//	//			if (pos + 11 + pattern.size() >= matched_text.size()) break;
-//	//			pos += 11;
-//	//		}
-//	//		else if (pos + 1 < matched_text.size())
-//	//			pos++;
-//	//		substring = matched_text.substr(pos, pattern.size());
-//	//		/*
-//	//		if (pos + 1 + pattern.size() < matched_text.size())
-//	//			pos += 1 + pattern.size();
+//		while (substring != pattern || matched_text[pos - 1] == '>')
+//		{
+//			//if (matched_text[pos - 1] == '>')
+//			if(substring != pattern)
+//			{
+//				if (pos + replacer_skip_value + pattern.size() >= matched_text.size()) break;
+//				pos += replacer_skip_value;
+//			}
+//			//else if (pos + 1 < matched_text.size())
+//			//	pos++;
+//			substring = matched_text.substr(pos, pattern.size());
+//			/*
+//			if (pos + 1 + pattern.size() < matched_text.size())
+//				pos += 1 + pattern.size();
 //
-//	//		else if (pos + 1 + pattern.size() >= matched_text.size()) break;
+//			else if (pos + 1 + pattern.size() >= matched_text.size()) break;
 //
-//	//		substring = matched_text.substr(pos, pattern.size());
-//	//		*/
-//	//	}
+//			substring = matched_text.substr(pos, pattern.size());
+//			*/
+//		}
 //
-//	//	if (pos >= matched_text.size()) break;
+//		if (pos + pattern.size() >= matched_text.size()) break;
 //
-//	//	std::string left = matched_text.substr(0, pos);
-//	//	std::string right = matched_text.substr(pos + pattern.size(), matched_text.size());
+//		std::string left = matched_text.substr(0, pos);
+//		std::string right = matched_text.substr(pos + pattern.size(), matched_text.size());
 //
-//	//	matched_text = left;
-//	//	matched_text += pattern_html();
-//	//	matched_text += right;
+//		matched_text = left;
+//		matched_text += pattern_html();
+//		matched_text += right;
 //
-//	//	match_count_++;
-//	//	//std::cout << "Replaced match at text[" << pos_keep << "]" << std::endl;
-//	//	//std::cout << "item replaced" << std::endl;
-//	//}
-//	////std::cout << "replacer finished\n";
+//		match_count_++;
+//		//std::cout << "Replaced match at text[" << pos_keep << "]" << std::endl;
+//		//std::cout << "item replaced" << std::endl;
+//	}
+//	//std::cout << "replacer finished\n";
 //	//replacer_finished_cv.notify_one();
 //}
 
-void SearchAlgorithm::replace_matches_in_text()
-{
-	/*
-	while(!matching_indexes.empty() || matching_indexes.empty() && search_complete_ == false )
-	{
-		std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
-		if (!matching_indexes.empty())
-		{
-			unsigned long long pos = matching_indexes.back();
-			matching_indexes.pop_back();
-			match_count_++;
-			matching_indexes_mutex_lock.unlock();
-			//show_context(text, pos);
-			//std::cout << match_count_ << "\n";
-		}
-	}
-	return;
-	//matched_text = text;
-	*/
+//unsigned long long xxx;
 
-	while (true)
-	{
-		std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
+//void SearchAlgorithm::replace_matches_in_text(unsigned long long start_pos, unsigned long long end_pos)
+//{
+//	/*
+//	while(!matching_indexes.empty() || matching_indexes.empty() && search_complete_ == false )
+//	{
+//		std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
+//		if (!matching_indexes.empty())
+//		{
+//			unsigned long long pos = matching_indexes.back();
+//			matching_indexes.pop_back();
+//			match_count_++;
+//			matching_indexes_mutex_lock.unlock();
+//			show_context(text, pos);
+//			std::cout << match_count_ << "\n";
+//		}
+//	}
+//	return;
+//	matched_text = text;
+//	*/
+//
+//	std::string local_text = text.substr(start_pos, end_pos - start_pos);
+//	unsigned long long replacer_skip_value = pattern_html().size() - pattern.size();
+//
+//	
+//	while (true)
+//	{
+//		bool found = false;
+//		std::unique_lock<std::mutex> matching_indexes_mutex_lock(matching_indexes_mutex);
+//
+//		while (!progress_ready && !search_complete_)
+//			output_cv.wait(matching_indexes_mutex_lock);
+//
+//		if (search_complete_ && matching_indexes.empty()) break;
+//		if (matching_indexes.empty()) continue;
+//
+//		progress_ready = false;
+//
+//		unsigned long long pos;
+//
+//		for (size_t i = 0; i < matching_indexes.size();++i)
+//		{
+//			auto x = matching_indexes[i];
+//			if (x >= start_pos && x < end_pos)
+//			{
+//				pos = x;
+//				std::cout << "erase\n";
+//				matching_indexes.erase(matching_indexes.begin() + i);
+//				std::cout << "unlock\n";
+//				matching_indexes_mutex_lock.unlock();
+//				found = true;
+//				break;
+//			}
+//		}
+//
+//		if(!found) continue;
+//		
+//		xxx++;
+//		matching_indexes.pop_back();
+//		matching_indexes_mutex_lock.unlock();
+//
+//		pos -= start_pos;
+//		
+//
+//		std::string substring = local_text.substr(pos, pattern.size());
+//
+//		while (substring != pattern || substring == pattern && local_text[pos - 1] == '>')
+//		{
+//			if (pos + replacer_skip_value + pattern.size() >= local_text.size()) break;
+//			pos += replacer_skip_value;
+//			substring = local_text.substr(pos, pattern.size());
+//		}
+//
+//		if (pos + replacer_skip_value + pattern.size() >= local_text.size()) break;
+//
+//		std::string left = local_text.substr(0, pos);
+//		std::string right = local_text.substr(pos + pattern.size(), local_text.size());
+//
+//		local_text = left;
+//		local_text += pattern_html();  
+//		local_text += right;
+//
+//		match_count_++;
+//		std::cout << "replaced\n";
+//	}
+//	text_fragment tf{ local_text,start_pos };
+//	std::unique_lock<std::mutex> local_text_fragments_mutex_lock(local_text_fragments_mutex_);
+//	local_text_fragments_.emplace_back(tf);
+//	replacer_finished_cv.notify_one();
+//	std::cout << "replacer exit\n";
+//}
 
-		while (!progress_ready && !search_complete_)
-			replacer_cv.wait(matching_indexes_mutex_lock);
-
-		if (search_complete_ && matching_indexes.empty()) break;
-		if (matching_indexes.empty()) continue;
-
-		progress_ready = false;
-
-		unsigned long long pos = matching_indexes.back();
-		unsigned long long pos_keep = pos;
-		matching_indexes.pop_back();
-		matching_indexes_mutex_lock.unlock();
-
-
-		std::unique_lock<std::mutex> matched_text_mutex_lock(matched_text_mutex);
-		std::string substring = matched_text.substr(pos, pattern.size());
-
-		while (substring != pattern || substring == pattern && matched_text[pos - 1] == '>')
-		{
-			/*
-			//if (matched_text[pos - 1] == '>')
-			if(substring != pattern)
-			{
-				if (pos + 13 + pattern.size() >= matched_text.size()) break;
-				pos += 13;
-			}
-			else if (pos + 1 < matched_text.size())
-				pos++;
-				*/
-
-
-			if (pos + 13 + pattern.size() >= matched_text.size()) break;
-			pos += 13;
-			substring = matched_text.substr(pos, pattern.size());
-		}
-
-		if (pos + 13 + pattern.size() >= matched_text.size()) break;
-
-		std::string left = matched_text.substr(0, pos);
-		std::string right = matched_text.substr(pos + pattern.size(), matched_text.size());
-
-		matched_text = left;
-		matched_text += pattern_html();
-		matched_text += right;
-
-		match_count_++;
-		//std::cout << "Replaced match at text[" << pos_keep << "]" << std::endl;
-		//std::cout << "item replaced at " << pos << std::endl;
-	//std::cout << "matches found:" << match_count_ << std::endl;
-	}
-	//std::cout << "replacer finished\n";
-	replacer_finished_cv.notify_one();
-}
-
-std::string SearchAlgorithm::pattern_html() const
-{
-	return R"(<span>)" + pattern + R"(</span>)";
-	//return R"(<span class="match">)" + pattern + R"(</span>)";
-}
+//std::string SearchAlgorithm::pattern_html() const
+//{
+//	return R"(<span>)" + pattern + R"(</span>)";
+//	//return R"(<span class="match">)" + pattern + R"(</span>)";
+//}

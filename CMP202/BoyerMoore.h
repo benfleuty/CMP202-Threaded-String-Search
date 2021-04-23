@@ -19,4 +19,6 @@ private:
 public:
 	BoyerMoore();
 	void start_search() override;
+
+	void benchmark() override;
 };

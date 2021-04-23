@@ -68,7 +68,6 @@ std::vector<long long> BoyerMoore::non_threaded_search() {
 
 void BoyerMoore::search_substring(unsigned long long start_pos, unsigned long long end_pos)
 {
-	std::vector<std::thread> write_threads;
 	for (unsigned long long i = start_pos; i < end_pos - 1; ++i) {
 		// check if the last character in the pattern is a match
 		const unsigned long long pos = i + pattern.size() - 1;		// no need to lock this as it is a read
@@ -98,37 +97,40 @@ void BoyerMoore::search_substring(unsigned long long start_pos, unsigned long lo
 			store_match_pos(i);
 		}
 	}
-	std::cout << "\nThread finished: [" << start_pos << "] - [" << end_pos << "]\n";
 }
 
 void BoyerMoore::start_boyer_moore_search_threads(const unsigned int& search_thread_count)
 {
-	unsigned long long width = search_thread_width_;
 	unsigned long long start_pos = 0;
 	unsigned long long end_pos = 0;
 	// start search threads X1 to Xn-2
-	std::vector<std::thread> threads;
-	std::thread match_replacer_thread(&BoyerMoore::replace_matches_in_text, this);
+	std::vector<std::thread> search_threads;
+	std::thread replacer_thread(&BoyerMoore::output_match, this);
 
-	for (unsigned int i = 1; i < search_thread_count; ++i)
+	for (size_t i = 1; i < search_thread_count; ++i)
 	{
 		// start_pos is the value of the search width multiplied by the number of threads that have already been started (i-1)
 		start_pos = search_thread_width_ * (i - 1);
 		// end_pos remains one tick ahead of start pos, leaving a width of search_thread_width_ between the start and end
 		end_pos = search_thread_width_ * i;
 
-		threads.emplace_back(std::thread(&BoyerMoore::search_substring, this, start_pos, end_pos));
+		search_threads.emplace_back(std::thread(&BoyerMoore::search_substring, this, start_pos, end_pos));
 	}
 
 	// start search thread X-1
 	start_pos = end_pos;
 	end_pos = text.size();
-	threads.emplace_back(std::thread(&BoyerMoore::search_substring, this, start_pos, end_pos));
+	search_threads.emplace_back(std::thread(&BoyerMoore::search_substring, this, start_pos, end_pos));
 
-	// join all threads
-	for (auto& thread : threads) thread.join();
+	// join all search threads
+	for (auto& thread : search_threads)
+		thread.join();
+	
+	timer.stop();
 	search_complete_ = true;
-	match_replacer_thread.join();
+	output_cv.notify_all();
+
+	replacer_thread.join();
 }
 
 void BoyerMoore::start_threaded_search()
@@ -152,8 +154,8 @@ void BoyerMoore::start_threaded_search()
 		}
 		catch (...) {}
 	}
-
-	const unsigned int num_of_search_threads = num_of_threads + 1;
+	
+	const unsigned int num_of_search_threads = num_of_threads;
 
 	// if there are more threads than chars to search
 	// don't bother with threading
@@ -168,13 +170,13 @@ void BoyerMoore::start_threaded_search()
 	// e.g. 1999 chars spread over 15 threads = 133 positions on threads 1-14 and 138 on thread 15
 	search_thread_width_ = text.size() / num_of_search_threads;
 
-	std::cout << "\nConcurrent Threads: " << num_of_threads
-		<< "\nSearch threads: " << num_of_search_threads
-		<< "\nText size:" << text.size()
-		<< "\nSearch thread width: " << search_thread_width_ << std::endl;
-
+	if (!benchmarked) {
+		std::cout << "\nConcurrent Threads: " << num_of_threads
+			<< "\nSearch threads: " << num_of_search_threads
+			<< "\nText size:" << text.size()
+			<< "\nSearch thread width: " << search_thread_width_ << std::endl;
+	}
 	start_boyer_moore_search_threads(num_of_search_threads);
-	timer.stop();
 }
 
 BoyerMoore::BoyerMoore()
@@ -194,4 +196,8 @@ void BoyerMoore::start_search()
 	if (threaded)
 		start_threaded_search();
 	else start_non_threaded_search();
+}
+
+void BoyerMoore::benchmark()
+{
 }

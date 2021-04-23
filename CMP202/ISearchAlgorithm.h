@@ -11,6 +11,8 @@ public:
 	virtual ~ISearchAlgorithm();
 
 	virtual void output_search_results() = 0;
-	virtual void show_matches() = 0;
-	virtual std::string generate_report() = 0;
+
+	virtual void benchmark() = 0;
+	//virtual void show_matches() = 0;
+	//virtual std::string generate_report() = 0;
 };
