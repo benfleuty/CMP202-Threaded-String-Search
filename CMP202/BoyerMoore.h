@@ -14,9 +14,11 @@ private:
 
 	void start_threaded_search();
 
-	long long skip_table[256] = {};
+	unsigned long long skip_table[256] = {};
 
 public:
 	BoyerMoore();
 	void start_search() override;
+
+	void benchmark() override;
 };

@@ -16,11 +16,19 @@ enum class algorithm
 	rabin_karp
 };
 
+bool benchmark_mode = false;
+
 void show_welcome_menu()
 {
 	cout << "Welcome" << endl << "Please choose which algorithm you would like to use: " << endl <<
 		"1) Boyer Moore" << endl <<
-		"2) Rabin Karp" << endl << "[1-2]: ";
+		"2) Rabin Karp" << endl <<
+		"3) ";
+
+	if (benchmark_mode) cout << "Disable ";
+	else cout << "Enable ";
+	
+	cout << "Benchmark Mode" << endl << "[1-3]: ";
 }
 
 algorithm get_desired_algorithm(const char& input)
@@ -54,6 +62,16 @@ bool confirm_algorithm(const algorithm& algo)
 	}
 }
 
+void benchmark_rk()
+{
+	
+}
+
+void benchmark_bm()
+{
+	
+}
+
 int main()
 {
 	while (true) {
@@ -69,8 +87,25 @@ int main()
 			std::getline(cin, input);
 			auto in = static_cast<char>(tolower(input[0]));
 
-			if (in == 'q') exit(0);
-			if (in != '1' && in != '2') continue;
+			switch (in)
+			{
+			case 'q':
+				exit(0);
+			case '1':
+			case '2':
+				algo = get_desired_algorithm(in);
+				break;
+			case '3':
+				benchmark_mode = !benchmark_mode;
+				continue;
+
+			default:
+				continue;
+
+			}
+
+			//if (in == 'q') exit(0);
+			//if (in != '1' && in != '2') continue;
 
 			algo = get_desired_algorithm(in);
 
@@ -90,6 +125,12 @@ int main()
 			continue;
 		}
 
+		if (benchmark_mode)
+		{
+			searcher->benchmark();
+			cout << "\nBENCHMARK COMPLETE\n";
+			return 0;
+		}
 		searcher->start_search();
 		searcher->output_search_results();
 
@@ -112,5 +153,6 @@ int main()
 		} while (true);
 		if (again) continue;
 		return 0;
+
 	}
 }

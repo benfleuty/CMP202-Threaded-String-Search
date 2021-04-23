@@ -24,9 +24,9 @@ private:
 
 	// threaded
 	void start_threaded_search();
+	void benchmark() override;
 	void start_search_threads(const unsigned int& search_thread_count);
 	void search_substring(const unsigned long long& start_pos, const unsigned long long& end_pos);
-	void hash_substring(const std::string& substring, long long& substring_hash_val) const;
 
 public:
 	// self
