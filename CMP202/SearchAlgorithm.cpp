@@ -128,16 +128,9 @@ std::string time_point_as_string(const std::chrono::system_clock::time_point& tp
 void SearchAlgorithm::store_match_pos(unsigned long long match_pos)
 {
 	if (threaded) {
-		unsigned int t_count = 0;
-		while (text.size() / 17 * t_count < match_pos)
-			t_count++;
-
 		std::unique_lock<std::mutex> lock(matching_indexes_mutex);
-		//std::cout << "Lock Start - " << match_pos << std::endl;
-		//std::cout << "\"" << pattern << "\" matched at [" << match_pos << "] on thread " << t_count << std::endl;
 		matching_indexes.emplace_back(match_pos);
 		lock.unlock();
-		//std::cout << "Lock End - " << match_pos << std::endl;
 		progress_ready = true;
 		output_cv.notify_one();
 		return;

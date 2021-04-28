@@ -155,7 +155,7 @@ void BoyerMoore::start_threaded_search()
 		catch (...) {}
 	}
 	
-	const unsigned int num_of_search_threads = num_of_threads;
+	const unsigned int num_of_search_threads = 2;
 
 	// if there are more threads than chars to search
 	// don't bother with threading
@@ -200,4 +200,63 @@ void BoyerMoore::start_search()
 
 void BoyerMoore::benchmark()
 {
+	benchmarked = true;
+	const auto original_text = get_text();
+	std::string output = "sample size,pattern size, iteration, time taken\n";
+	const auto* file_name = "benchmark-results-boyer-moore-2t.csv";
+	std::ofstream f;
+	f.open(file_name, std::ios_base::binary);
+	f << output;
+	f.close();
+
+	for (size_t full_loop = 1; full_loop <= 8192; full_loop *= 2)
+	{
+		switch (full_loop)
+		{
+		case 32:
+		case 512:
+		case 4096:
+		case 8192:
+			break;
+		default:
+			continue;
+		}
+		text = original_text;
+		// countdown iterator for loop reading
+		size_t j = full_loop;
+		// if more than 1 set is to be loaded
+		// loop until 1 is reached
+		while (j > 1) {
+			// append self
+			text.append(text);
+			j /= 2;
+		}
+
+		std::vector<std::string> patterns{ "the","fried","chicken","Teletubbies" };
+		for (size_t pattern_loop = 0; pattern_loop < patterns.size(); pattern_loop++)
+		{
+			pattern = patterns[pattern_loop];
+			for (auto& i : skip_table)
+				i = pattern.size();
+
+			// for each of the characters in the pattern
+			for (unsigned long long i = 0; i < pattern.size(); ++i)
+				// set that character to its length from the end of the pattern
+				skip_table[pattern[i]] = pattern.size() - 1 - i;
+			for (size_t algo_loop = 0; algo_loop < 100; algo_loop++) {
+				match_count_ = 0;
+				start_threaded_search();
+
+				std::cout << "Sample Size: " << full_loop << " | Pattern: " << pattern << " | Iteration: " << algo_loop << " | Time taken: " << timer.elapsed_time_us() << " | Found: " << match_count_ << std::endl;
+				output += std::to_string(full_loop) + "," + std::to_string(patterns[pattern_loop].size()) + "," + std::to_string(algo_loop) + "," + std::to_string(timer.elapsed_time_us()) + "\n";
+
+			}
+			output += "\n";
+		}
+	}
+
+	f.open(file_name, std::ios_base::binary);
+	f << output;
+	f.close();
+
 }

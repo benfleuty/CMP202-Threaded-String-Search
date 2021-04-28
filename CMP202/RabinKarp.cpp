@@ -199,7 +199,7 @@ void RabinKarp::start_threaded_search()
 		catch (...) {}
 	}
 
-	const unsigned int num_of_search_threads = num_of_threads;
+	const unsigned int num_of_search_threads = 1;
 
 	// take the total length of the text and divide it by the number of available cores
 	// the last search thread will take up the rest of the characters
