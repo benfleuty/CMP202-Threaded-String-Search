@@ -199,7 +199,7 @@ void RabinKarp::start_threaded_search()
 		catch (...) {}
 	}
 
-	const unsigned int num_of_search_threads = 1;
+	const unsigned int num_of_search_threads = 16;
 
 	// take the total length of the text and divide it by the number of available cores
 	// the last search thread will take up the rest of the characters
@@ -224,8 +224,9 @@ void RabinKarp::benchmark()
 	benchmarked = true;
 	std::string original_text = get_text();
 	std::string output = "sample size,pattern size, iteration, time taken\n";
+	const auto* file_name = "benchmark-results-rabin-karp-16t.csv";
 	std::ofstream f;
-	f.open("benchmark-results-rabin-karp.csv", std::ios_base::binary);
+	f.open(file_name, std::ios_base::binary);
 	f << output;
 	f.close();
 
@@ -261,7 +262,7 @@ void RabinKarp::benchmark()
 				match_count_ = 0;
 				start_threaded_search();
 				
-				std::cout << "Sample Size: " << full_loop << " | Pattern: " << pattern << " | Iteration: " << algo_loop << " | Time taken: " << timer.elapsed_time_us() << " | Found: " << match_count_ << std::endl;
+				std::cout << "Sample Size: " << full_loop << " | Pattern: " << pattern << " | Iteration: " << algo_loop << " | Time taken: " << timer.elapsed_time_us() << std::endl;
 				output += std::to_string(full_loop) + "," + std::to_string(patterns[pattern_loop].size()) + "," + std::to_string(algo_loop) + "," + std::to_string(timer.elapsed_time_us()) + "\n";
 				
 			}
@@ -269,7 +270,7 @@ void RabinKarp::benchmark()
 		}
 	}
 
-	f.open("benchmark-results-rabin-karp.csv", std::ios_base::binary);
+	f.open(file_name, std::ios_base::binary);
 	f << output;
 	f.close();
 }

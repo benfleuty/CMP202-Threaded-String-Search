@@ -247,7 +247,7 @@ void BoyerMoore::benchmark()
 				match_count_ = 0;
 				start_threaded_search();
 
-				std::cout << "Sample Size: " << full_loop << " | Pattern: " << pattern << " | Iteration: " << algo_loop << " | Time taken: " << timer.elapsed_time_us() << " | Found: " << match_count_ << std::endl;
+				std::cout << "Sample Size: " << full_loop << " | Pattern: " << pattern << " | Iteration: " << algo_loop << " | Time taken: " << timer.elapsed_time_us() << std::endl;
 				output += std::to_string(full_loop) + "," + std::to_string(patterns[pattern_loop].size()) + "," + std::to_string(algo_loop) + "," + std::to_string(timer.elapsed_time_us()) + "\n";
 
 			}

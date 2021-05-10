@@ -13,7 +13,7 @@
 
 SearchAlgorithm::SearchAlgorithm()
 {
-	pattern = "the";// ISearchAlgorithm::get_pattern();
+	pattern = "@";// ISearchAlgorithm::get_pattern();
 	text = ISearchAlgorithm::get_text();
 	threaded = true; // ISearchAlgorithm::is_threaded();
 	matched_text = text;
